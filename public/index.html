@@ -2,149 +2,124 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Cloud Browser</title>
-  <meta name="robots" content="noindex,nofollow" />
+  <link rel="icon" href="/favicon.ico" />
   <style>
-    :root{--bg:#0f1220;--panel:#171a2a;--accent:#6aa5ff;--text:#e9edff;--muted:#9aa3b2;--ok:#27c07d;--danger:#ff6a6a;--border:#2a2f45;--radius:16px;--shadow:0 10px 30px rgba(0,0,0,.25)}
-    *{box-sizing:border-box} html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    .shell{display:grid;grid-template-rows:auto 1fr;gap:10px;height:100%;padding:14px}
-    .topbar{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);padding:10px}
-    .btn{border:1px solid var(--border);background:#121528;color:var(--text);padding:8px 10px;border-radius:10px;cursor:pointer}
-    .btn:hover{filter:brightness(1.1)}
-    .omnibox{display:flex;align-items:center;gap:8px;background:#0e1122;border:1px solid var(--border);border-radius:12px;padding:6px 10px}
-    .omnibox input{flex:1;background:transparent;border:0;outline:0;color:var(--text);font-size:14px}
-    .badge{font-size:11px;color:var(--muted);border:1px dashed var(--border);padding:2px 6px;border-radius:8px}
-    .status{font-size:12px;color:var(--muted);display:inline-flex;gap:10px;align-items:center}
-    .dot{width:8px;height:8px;border-radius:50%;background:var(--danger);display:inline-block}
-    .dot.ok{background:var(--ok)}
-    .viewport{position:relative;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);background:#0b0e1c}
-    iframe{width:100%;height:100%;border:0;background:#0b0e1c}
+    :root{
+      --bg:#0e1220; --chrome:#14182b; --chrome-2:#0f1324;
+      --text:#e7e9f4; --muted:#98a2b3; --btn:#1f2b4d; --btnh:#26345d;
+      --ring:#4f46e5; --ok:#22c55e; --bad:#ef4444; --amb:#f59e0b;
+      --radius:14px; --sh:0 10px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Arial}
+    .chrome{position:sticky;top:0;z-index:5;padding:10px 12px;background:linear-gradient(180deg,var(--chrome),var(--chrome-2) 140%);box-shadow:var(--sh)}
+    .row{display:flex;align-items:center;gap:10px}
+    .brand{font-weight:700;opacity:.85;margin-right:8px}
+    .btn{height:38px;width:44px;border-radius:10px;display:grid;place-items:center;background:var(--btn);border:1px solid #ffffff10;color:var(--text);cursor:pointer;transition:.15s}
+    .btn:hover{background:var(--btnh)}
+    .i{width:16px;height:16px;display:inline-block}
+    .i.b{border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg)}
+    .i.f{border-right:2px solid currentColor;border-top:2px solid currentColor;transform:rotate(45deg)}
+    .i.r{border:2px solid currentColor;border-radius:50%}
+    .i.plus{position:relative} .i.plus::before,.i.plus::after{content:"";position:absolute;inset:7px 3px;background:currentColor}
+    .i.plus::after{transform:rotate(90deg)}
+    .addr{flex:1;height:40px;padding:0 14px;background:var(--chrome-2);border:1px solid #ffffff14;border-radius:12px;outline:0;color:var(--text);font-size:15px}
+    .addr:focus{border-color:#4f46e580;box-shadow:inset 0 0 0 2px var(--ring)}
+    .addr::placeholder{color:#6b7280}
+    .pill{height:28px;padding:0 10px;border-radius:999px;display:inline-flex;align-items:center;gap:6px;background:#ffffff10;border:1px solid #ffffff14;color:#aab1c3;font-size:12px}
+    .dot{width:8px;height:8px;border-radius:999px;background:#f59e0b}
+    .ok .dot{background:var(--ok)} .bad .dot{background:var(--bad)}
+    .wrap{position:fixed;inset:70px 12px 12px 12px;background:#0a0d1a;border:1px solid #ffffff0f;border-radius:var(--radius);overflow:hidden;box-shadow:var(--sh)}
+    iframe{width:100%;height:100%;border:0;background:#0a0d1a}
   </style>
+
+  <!-- Ultraviolet runtime (local files you’ll add in step 2) -->
+  <script defer src="/uv/uv.bundle.js"></script>
+  <script defer src="/uv/uv.config.js"></script>
 </head>
 <body>
-  <div class="shell">
-    <div class="topbar">
-      <div style="display:flex;gap:6px">
-        <button class="btn" id="backBtn" type="button" title="Back">⟵</button>
-        <button class="btn" id="fwdBtn" type="button" title="Forward">⟶</button>
-        <button class="btn" id="refreshBtn" type="button" title="Refresh">↻</button>
-      </div>
-
-      <form class="omnibox" id="omniform" autocomplete="off">
-        <span style="opacity:.85">🌐</span>
-        <input id="omnibox" placeholder="Search or enter address" spellcheck="false" />
-        <span class="badge" id="transportBadge">transport: connecting…</span>
-      </form>
-
-      <div class="status">
-        <span class="dot" id="wsDot"></span><span>WS</span>
-        <span class="dot" id="httpDot"></span><span>HTTP</span>
-      </div>
-
-      <button class="btn" id="newTabBtn" type="button" title="New tab">＋</button>
-    </div>
-
-    <div class="viewport">
-      <iframe id="view"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-popups"
-              referrerpolicy="no-referrer"></iframe>
-    </div>
+  <div class="chrome">
+    <form id="nav" class="row" autocomplete="off">
+      <span class="brand">Cloud Browser</span>
+      <button type="button" id="back"   class="btn" title="Back"><span class="i b"></span></button>
+      <button type="button" id="fwd"    class="btn" title="Forward"><span class="i f"></span></button>
+      <button type="button" id="reload" class="btn" title="Reload"><span class="i r"></span></button>
+      <input id="url" class="addr" placeholder="Type a URL or search Google…" />
+      <span id="pill-transport" class="pill"><span class="dot"></span><span id="t-label">transport: connecting…</span></span>
+      <span id="pill-ws"  class="pill"><span class="dot"></span>WS</span>
+      <span id="pill-http" class="pill"><span class="dot"></span>HTTP</span>
+      <button type="button" class="btn" title="New tab"><span class="i plus"></span></button>
+    </form>
   </div>
 
-  <script type="module">
-    const WISP_ENDPOINTS = [
-      "wss://voiceless-dorry-nothinggames-cd908596.koyeb.app"
-    ];
-    const HOMEPAGE = "https://www.google.com/";
+  <div class="wrap">
+    <!-- Everything under __uv$config.prefix is fully proxied by the SW -->
+    <iframe id="view"></iframe>
+  </div>
 
-    import { BareMuxConnection, BareClient } from "https://esm.sh/@mercuryworkshop/bare-mux@2.1.7?bundle";
-    const EPOXY_MOD_URL = "https://cdn.jsdelivr.net/npm/@mercuryworkshop/epoxy-transport@2.1.28/lib/index.mjs";
+  <script>
+    const $ = (s, r=document)=>r.querySelector(s);
+    const urlBox = $("#url"), frame=$("#view");
+    const pillTransport=$("#pill-transport"), pillWS=$("#pill-ws"), pillHTTP=$("#pill-http"), tLabel=$("#t-label");
 
-    const badge   = document.getElementById("transportBadge");
-    const wsDot   = document.getElementById("wsDot");
-    const httpDot = document.getElementById("httpDot");
-    const view    = document.getElementById("view");
-    const form    = document.getElementById("omniform");
-    const box     = document.getElementById("omnibox");
-    const backBtn = document.getElementById("backBtn");
-    const fwdBtn  = document.getElementById("fwdBtn");
-    const refreshBtn = document.getElementById("refreshBtn");
+    const isProbablyUrl = (s)=>{
+      try{
+        if (/^[a-zA-Z][a-zA-Z0-9+\-.]*:/.test(s)) { new URL(s); return true; }
+        if (s.includes(" ") || !s.includes(".")) return false;
+        new URL("https://"+s); return true;
+      }catch{return false;}
+    };
+    const abs = (s)=>/^[a-zA-Z][a-zA-Z0-9+\-.]*:/.test(s)?s:"https://"+s;
 
-    const setDot = (el, ok) => el.classList.toggle("ok", !!ok);
-    const setBadge = (txt) => badge.textContent = "transport: " + txt;
-
-    function toUrlOrSearch(input) {
-      const s = (input || "").trim();
-      if (!s) return HOMEPAGE;
-      const scheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(s);
-      const looksHost = /^[^\s/]+\.[^\s/]+/.test(s);
-      if (scheme) return s;
-      if (looksHost) return "https://" + s;
-      return "https://www.google.com/search?q=" + encodeURIComponent(s);
+    async function registerSW(){
+      if (!("serviceWorker" in navigator)) return;
+      await navigator.serviceWorker.register("/sw.js", { scope: self.__uv$config.prefix });
     }
 
-    let bare = null;
-    let transportReady = false;
+    // Status dots
+    const ok = (el, label)=>{ el.classList.add("ok"); el.classList.remove("bad"); if(el===pillTransport&&label) tLabel.textContent="transport: "+label; }
+    const bad= (el, label)=>{ el.classList.add("bad"); el.classList.remove("ok"); if(el===pillTransport&&label) tLabel.textContent="transport: "+label; }
 
-    async function initTransports() {
-      setBadge("connecting…");
+    async function health(){
       try {
-// ✅ use the same-origin shim you added at public/bare-mux-worker.js
-const mux = new BareMuxConnection("/bare-mux-worker.js");
-
-
-        let ok = false, lastErr = null;
-        for (const w of WISP_ENDPOINTS) {
-          try {
-            await mux.setTransport(EPOXY_MOD_URL, [{ wisp: w }]);
-            ok = true; break;
-          } catch (e) { lastErr = e; }
-        }
-        if (!ok) throw lastErr || new Error("no wisp transport available");
-
-        bare = new BareClient();
-        transportReady = true;
-        setBadge("epoxy+wisp");
-        setDot(wsDot, true);
-        setDot(httpDot, true);
-      } catch (err) {
-        console.error("transport init failed", err);
-        setBadge("error");
-        setDot(wsDot, false);
-        setDot(httpDot, false);
-        transportReady = false;
-      }
-    }
-
-    await initTransports();
-
-    async function navigate(raw) {
-      const target = toUrlOrSearch(raw);
-      if (!transportReady || !bare) { alert("Transport not ready."); return; }
+        // SharedWorker (Bare-Mux) should load because we serve it from same origin
+        const w = new SharedWorker("/bare-mux-worker.js",{type:"classic",name:"bare-mux"}); w.port.start(); ok(pillTransport,"SharedWorker");
+      } catch(e){ bad(pillTransport,"worker blocked"); console.error(e); }
       try {
-        const res = await bare.fetch(target, { method: "GET" });
-        const ct = (res.headers.get("content-type") || "").toLowerCase();
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        view.src = url;
-        view.addEventListener("load", () => setTimeout(() => URL.revokeObjectURL(url), 500), { once:true });
-      } catch (e) {
-        console.error("navigate error", e);
-        const errHtml = `<!doctype html><meta charset="utf-8"><body style="background:#0b0e14;color:#e8f0fe;font-family:system-ui"><div style="max-width:860px;margin:8vh auto;padding:24px"><h2>Load error</h2><pre style="background:#111319;border:1px solid #1b1f2a;border-radius:10px;padding:12px;white-space:pre-wrap">${(e&&e.stack)||e}</pre></div></body>`;
-        const blob = new Blob([errHtml], { type: "text/html" });
-        view.src = URL.createObjectURL(blob);
-      }
+        await new Promise((res,rej)=>{ const ws=new WebSocket(self.__uv$config.wisp); ws.onopen=()=>{ws.close();res()}; ws.onerror=rej; });
+        ok(pillWS);
+      } catch(e){ bad(pillWS); console.error(e); }
+      try {
+        const r = await fetch(self.__uv$config.bare, { method:"OPTIONS" });
+        if (r.ok) ok(pillHTTP); else throw new Error(r.status);
+      } catch(e){ bad(pillHTTP); console.error(e); }
     }
 
-    form.addEventListener("submit", (e)=>{ e.preventDefault(); navigate(box.value); });
-    refreshBtn.addEventListener("click", ()=>view.contentWindow?.location?.reload());
-    backBtn.addEventListener("click", ()=>view.contentWindow?.history?.back());
-    fwdBtn.addEventListener("click", ()=>view.contentWindow?.history?.forward());
+    function uvUrl(target){
+      // Do NOT force "https://" in the visible bar
+      return self.__uv$config.prefix + Ultraviolet.codec.xor.encode(target);
+    }
 
-    navigate(HOMEPAGE);
-    // optional WS smoke:
-    try { if (transportReady && bare) { const ws = bare.createWebSocket("wss://echo.websocket.events"); ws.onopen=()=>ws.send("hi"); ws.onmessage=(e)=>{console.log("echo",e.data); ws.close();}; } } catch {}
+    async function navigate(input){
+      const t = input.trim(); if(!t) return;
+      urlBox.value = t; // keep exactly what user typed
+      const dest = isProbablyUrl(t) ? abs(t) : ("https://www.google.com/search?q=" + encodeURIComponent(t));
+      frame.src = uvUrl(dest);  // FULL PROXY via SW
+    }
+
+    $("#nav").addEventListener("submit", (e)=>{ e.preventDefault(); navigate(urlBox.value); });
+    $("#reload").addEventListener("click", ()=> frame.contentWindow?.location.reload());
+    $("#back").addEventListener("click", ()=> frame.contentWindow?.history.back());
+    $("#fwd").addEventListener("click", ()=> frame.contentWindow?.history.forward());
+
+    (async ()=>{
+      await registerSW();
+      await health();
+      urlBox.value="google.com";        // search-first UX
+      navigate("google.com");
+    })();
   </script>
 </body>
 </html>

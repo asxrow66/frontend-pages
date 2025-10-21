@@ -1,2 +1,2 @@
-// public/bare-mux-worker.js
-importScripts("https://cdn.jsdelivr.net/npm/@mercuryworkshop/bare-mux@2.1.7/lib/worker.js");
+// This wrapper pulls in the actual mux worker from your own origin.
+importScripts("/vendor/bare-mux/worker.js");

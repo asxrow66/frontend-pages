@@ -1,0 +1,1 @@
+Couldn't find the requested file /lib/worker.js in @mercuryworkshop/bare-mux.
