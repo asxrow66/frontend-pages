@@ -1,19 +1,32 @@
+// Vendors the Bare-Mux worker into /public so it can be loaded from same-origin.
 import { mkdir, writeFile } from "node:fs/promises";
-import https from "node:https";
 
-const SRC  = "https://cdn.jsdelivr.net/npm/@mercuryworkshop/bare-mux@2.1.7/lib/worker.js";
-const DEST = "public/vendor/bare-mux-core.js";
+const VER = process.env.BAREMUX_VER || "2.1.7"; // you can override in CF build vars
+
+const CANDIDATES = [
+  // common paths
+  `https://cdn.jsdelivr.net/npm/@mercuryworkshop/bare-mux@${VER}/lib/worker.js`,
+  `https://unpkg.com/@mercuryworkshop/bare-mux@${VER}/lib/worker.js`,
+  // alt paths some releases use
+  `https://cdn.jsdelivr.net/npm/@mercuryworkshop/bare-mux@${VER}/dist/worker.js`,
+  `https://unpkg.com/@mercuryworkshop/bare-mux@${VER}/dist/worker.js`,
+  // unpinned fallbacks
+  `https://cdn.jsdelivr.net/npm/@mercuryworkshop/bare-mux/lib/worker.js`,
+  `https://unpkg.com/@mercuryworkshop/bare-mux/lib/worker.js`,
+];
+
+async function fetchFirstOk(urls) {
+  for (const url of urls) {
+    try {
+      const r = await fetch(url);
+      if (r.ok) return { code: await r.text(), from: url };
+    } catch (_) { /* try next */ }
+  }
+  throw new Error("Could not download bare-mux worker from any known URL.");
+}
+
+const { code, from } = await fetchFirstOk(CANDIDATES);
 
 await mkdir("public/vendor", { recursive: true });
-
-const fetchText = (url) => new Promise((resolve, reject) => {
-  https.get(url, (res) => {
-    if (res.statusCode !== 200) return reject(new Error("HTTP " + res.statusCode));
-    let data = ""; res.setEncoding("utf8");
-    res.on("data", c => data += c); res.on("end", () => resolve(data));
-  }).on("error", reject);
-});
-
-const code = await fetchText(SRC);
-await writeFile(DEST, code, "utf8");
-console.log("Vendored Bare-Mux →", DEST);
+await writeFile("public/vendor/bare-mux-core.js", code, "utf8");
+console.log("Vendored Bare-Mux worker from:", from, "→ public/vendor/bare-mux-core.js");
