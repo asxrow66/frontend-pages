@@ -2,123 +2,249 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Cloud Browser</title>
-  <link rel="icon" href="/favicon.ico" />
-  <style>
-    :root{
-      --bg:#0e1220; --chrome:#14182b; --chrome-2:#0f1324;
-      --text:#e7e9f4; --muted:#98a2b3; --btn:#1f2b4d; --btnh:#26345d;
-      --ring:#4f46e5; --ok:#22c55e; --bad:#ef4444; --amb:#f59e0b;
-      --radius:14px; --sh:0 10px 30px rgba(0,0,0,.35);
-    }
-    *{box-sizing:border-box} html,body{height:100%}
-    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Arial}
-    .chrome{position:sticky;top:0;z-index:5;padding:10px 12px;background:linear-gradient(180deg,var(--chrome),var(--chrome-2) 140%);box-shadow:var(--sh)}
-    .row{display:flex;align-items:center;gap:10px}
-    .brand{font-weight:700;opacity:.85;margin-right:8px}
-    .btn{height:38px;width:44px;border-radius:10px;display:grid;place-items:center;background:var(--btn);border:1px solid #ffffff10;color:var(--text);cursor:pointer;transition:.15s}
-    .btn:hover{background:var(--btnh)}
-    .i{width:16px;height:16px;display:inline-block}
-    .i.b{border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg)}
-    .i.f{border-right:2px solid currentColor;border-top:2px solid currentColor;transform:rotate(45deg)}
-    .i.r{border:2px solid currentColor;border-radius:50%}
-    .i.plus{position:relative} .i.plus::before,.i.plus::after{content:"";position:absolute;inset:7px 3px;background:currentColor}
-    .i.plus::after{transform:rotate(90deg)}
-    .addr{flex:1;height:40px;padding:0 14px;background:var(--chrome-2);border:1px solid #ffffff14;border-radius:12px;outline:0;color:var(--text);font-size:15px}
-    .addr:focus{border-color:#4f46e580;box-shadow:inset 0 0 0 2px var(--ring)}
-    .addr::placeholder{color:#6b7280}
-    .pill{height:28px;padding:0 10px;border-radius:999px;display:inline-flex;align-items:center;gap:6px;background:#ffffff10;border:1px solid #ffffff14;color:#aab1c3;font-size:12px}
-    .dot{width:8px;height:8px;border-radius:999px;background:#f59e0b}
-    .ok .dot{background:var(--ok)} .bad .dot{background:var(--bad)}
-    .wrap{position:fixed;inset:70px 12px 12px 12px;background:#0a0d1a;border:1px solid #ffffff0f;border-radius:var(--radius);overflow:hidden;box-shadow:var(--sh)}
-    iframe{width:100%;height:100%;border:0;background:#0a0d1a}
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title></title>
 
-  <!-- Ultraviolet runtime (local files you’ll add in step 2) -->
-  <script defer src="/uv/uv.bundle.js"></script>
-  <script defer src="/uv/uv.config.js"></script>
+  <!-- Ultraviolet core (already in your repo) -->
+  <script src="/uv.bundle.js" defer></script>
+  <script src="/uv.config.js" defer></script>
+
+  <!-- Status chips + nav styles -->
+  <style>
+    :root {
+      --bg: #0f1320;
+      --bg-soft: #151a2c;
+      --chip: #1b2139;
+      --text: #d6d9e6;
+      --muted: #9aa3b2;
+      --accent: #6ea8fe;
+      --ok: #27c281;
+      --warn: #f0a500;
+      --bad: #ff6b6b;
+      --ring: #2a3357;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif; }
+    .bar {
+      display: grid;
+      grid-template-columns: auto auto 1fr auto auto auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0)) , var(--bg);
+      border-bottom: 1px solid var(--ring);
+    }
+    .btn {
+      height: 44px; width: 64px;
+      display: grid; place-items: center;
+      background: var(--bg-soft);
+      border: 1px solid var(--ring);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: 120ms ease;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn svg { width: 22px; height: 22px; stroke: var(--text); }
+    .addr-wrap {
+      height: 44px; display: grid; align-items: center;
+      background: var(--bg-soft);
+      border: 1px solid var(--ring); border-radius: 14px; padding: 0 14px;
+    }
+    #address {
+      width: 100%; height: 40px; outline: none; border: 0;
+      background: transparent; color: var(--text);
+      font-size: 16px;
+    }
+    .chip {
+      display: inline-grid; grid-auto-flow: column; align-items: center; gap: 8px;
+      height: 44px; padding: 0 14px;
+      background: var(--chip);
+      border: 1px solid var(--ring); border-radius: 14px; color: var(--text);
+      font-size: 14px;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--warn); }
+    .dot.ok { background: var(--ok); }
+    .dot.bad { background: var(--bad); }
+
+    .stage { height: calc(100% - 66px); }
+    #view {
+      width: 100%; height: 100%; border: 0; display: block;
+      background: #000;
+    }
+  </style>
 </head>
 <body>
-  <div class="chrome">
-    <form id="nav" class="row" autocomplete="off">
-      <span class="brand">Cloud Browser</span>
-      <button type="button" id="back"   class="btn" title="Back"><span class="i b"></span></button>
-      <button type="button" id="fwd"    class="btn" title="Forward"><span class="i f"></span></button>
-      <button type="button" id="reload" class="btn" title="Reload"><span class="i r"></span></button>
-      <input id="url" class="addr" placeholder="Type a URL or search Google…" />
-      <span id="pill-transport" class="pill"><span class="dot"></span><span id="t-label">transport: connecting…</span></span>
-      <span id="pill-ws"  class="pill"><span class="dot"></span>WS</span>
-      <span id="pill-http" class="pill"><span class="dot"></span>HTTP</span>
-      <button type="button" class="btn" title="New tab"><span class="i plus"></span></button>
+  <div class="bar">
+    <!-- (Removed “Cloud Browser” label and “+” new-tab button) -->
+    <button class="btn" id="back" title="Back">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+        <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <button class="btn" id="forward" title="Forward">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+        <path d="M9 6l6 6-6 6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <button class="btn" id="reload" title="Reload">
+      <!-- circular arrow icon -->
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+        <path d="M3 12a9 9 0 1 0 3-6.708" stroke="currentColor" stroke-linecap="round"/>
+        <path d="M3 4v4h4" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
+    <form class="addr-wrap" id="nav">
+      <input id="address" placeholder="Type a URL or search Google" autocomplete="off" spellcheck="false" />
     </form>
+
+    <div class="chip"><span class="dot" id="chip-transport"></span><span id="chip-transport-text">transport: connecting…</span></div>
+    <div class="chip"><span class="dot" id="chip-ws"></span>WS</div>
+    <div class="chip"><span class="dot" id="chip-http"></span>HTTP</div>
   </div>
 
-  <div class="wrap">
-    <!-- Everything under __uv$config.prefix is fully proxied by the SW -->
-    <iframe id="view"></iframe>
-  </div>
+  <main class="stage">
+    <!-- Allow fullscreen & lots of capabilities for things like GeForce NOW -->
+    <iframe id="view"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads"
+      allow="fullscreen *; autoplay *; gamepad *; clipboard-read *; clipboard-write *; xr-spatial-tracking *; geolocation *; microphone *; camera *; display-capture *; midi *; encrypted-media *"
+      allowfullscreen
+    ></iframe>
+  </main>
 
-  <script>
-    const $ = (s, r=document)=>r.querySelector(s);
-    const urlBox = $("#url"), frame=$("#view");
-    const pillTransport=$("#pill-transport"), pillWS=$("#pill-ws"), pillHTTP=$("#pill-http"), tLabel=$("#t-label");
+  <script type="module">
+    // -------------------------
+    // EDIT THESE 3 ENDPOINTS
+    // -------------------------
+    const PAGES_ORIGIN = location.origin; // your Pages site (this page)
+    const BARE_HTTP    = "https://bare-transport.jcullenr1236496.workers.dev"; // Cloudflare Worker Bare HTTP
+    const WISP_WS      = "wss://voiceless-dorry-nothinggames-cd908596.koyeb.app"; // Koyeb Wisp for WS
 
-    const isProbablyUrl = (s)=>{
-      try{
-        if (/^[a-zA-Z][a-zA-Z0-9+\-.]*:/.test(s)) { new URL(s); return true; }
-        if (s.includes(" ") || !s.includes(".")) return false;
-        new URL("https://"+s); return true;
-      }catch{return false;}
+    // IMPORTANT: your Koyeb env must be EXACT origin without trailing slash:
+    //   ALLOW_ORIGIN = https://frontend-pages-dfl.pages.dev
+
+    // 1) Register UV service worker (drives HTTP proxying)
+    async function installSW() {
+      if (!("serviceWorker" in navigator)) return false;
+      try {
+        await navigator.serviceWorker.register("/uv.sw.js", { scope: "/" });
+        await navigator.serviceWorker.ready;
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    // 2) Tell UV where the Bare server lives (HTTP) and the mux worker path (WS)
+    //    We keep the input as typed; no forced "https://" in the UI.
+    //    UV will encode it under the hood.
+    function configureUV() {
+      // bare endpoint (HTTP). UV expects a base URL that it will append /v1 automatically.
+      // Keep a trailing slash.
+      if (window.__uv$config) {
+        __uv$config.bare = BARE_HTTP.endsWith("/") ? BARE_HTTP : BARE_HTTP + "/";
+      }
+
+      // Where Bare-Mux worker is hosted (must be SAME ORIGIN!)
+      // We self-host at /bare-mux-worker.js (added below).
+      window.__BARE_MUX_WORKER_URL = "/bare-mux-worker.js";
+
+      // Where WebSockets should tunnel to (Wisp server)
+      window.__WISP_ENDPOINT = WISP_WS;
+    }
+
+    // 3) Minimal navigation helpers
+    const addr = document.getElementById("address");
+    const view = document.getElementById("view");
+
+    function toTarget(input) {
+      const s = input.trim();
+      // If it looks like a URL with a dot or has a scheme, build URL. Else use Google search.
+      const looksLikeURL = /^[a-z]+:\/\//i.test(s) || (s.includes(".") && !s.includes(" "));
+      const target = looksLikeURL ? ( /^[a-z]+:\/\//i.test(s) ? s : `https://${s}` )
+                                  : `https://www.google.com/search?q=${encodeURIComponent(s)}`;
+      return target;
+    }
+
+    function uvEncode(url) {
+      // Provided by uv.bundle.js
+      return __uv$config.prefix + __uv$config.encodeUrl(url);
+    }
+
+    document.getElementById("nav").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const target = toTarget(addr.value);
+      view.src = uvEncode(target);
+    });
+
+    // Back/forward/reload
+    document.getElementById("back").onclick = () => view.contentWindow?.history.back();
+    document.getElementById("forward").onclick = () => view.contentWindow?.history.forward();
+    document.getElementById("reload").onclick = () => {
+      // Try to reload the frame if it already navigated, otherwise reload this page.
+      if (view.src) view.contentWindow?.location.reload();
+      else location.reload();
     };
-    const abs = (s)=>/^[a-zA-Z][a-zA-Z0-9+\-.]*:/.test(s)?s:"https://"+s;
 
-    async function registerSW(){
-      if (!("serviceWorker" in navigator)) return;
-      await navigator.serviceWorker.register("/sw.js", { scope: self.__uv$config.prefix });
-    }
+    // 4) Status chips
+    const chipTransport = document.getElementById("chip-transport");
+    const chipTransportText = document.getElementById("chip-transport-text");
+    const chipHTTP = document.getElementById("chip-http");
+    const chipWS = document.getElementById("chip-ws");
 
-    // Status dots
-    const ok = (el, label)=>{ el.classList.add("ok"); el.classList.remove("bad"); if(el===pillTransport&&label) tLabel.textContent="transport: "+label; }
-    const bad= (el, label)=>{ el.classList.add("bad"); el.classList.remove("ok"); if(el===pillTransport&&label) tLabel.textContent="transport: "+label; }
+    const setDot = (el, state) => {
+      el.classList.remove("ok", "bad");
+      if (state === "ok") el.classList.add("ok");
+      else if (state === "bad") el.classList.add("bad");
+    };
 
-    async function health(){
+    async function probeHTTP() {
+      // We don't send Bare headers here on purpose; we only care that the origin is reachable.
       try {
-        // SharedWorker (Bare-Mux) should load because we serve it from same origin
-        const w = new SharedWorker("/bare-mux-worker.js",{type:"classic",name:"bare-mux"}); w.port.start(); ok(pillTransport,"SharedWorker");
-      } catch(e){ bad(pillTransport,"worker blocked"); console.error(e); }
-      try {
-        await new Promise((res,rej)=>{ const ws=new WebSocket(self.__uv$config.wisp); ws.onopen=()=>{ws.close();res()}; ws.onerror=rej; });
-        ok(pillWS);
-      } catch(e){ bad(pillWS); console.error(e); }
-      try {
-        const r = await fetch(self.__uv$config.bare, { method:"OPTIONS" });
-        if (r.ok) ok(pillHTTP); else throw new Error(r.status);
-      } catch(e){ bad(pillHTTP); console.error(e); }
+        const r = await fetch(BARE_HTTP + (BARE_HTTP.endsWith("/") ? "" : "/"), { mode: "cors" });
+        setDot(chipHTTP, r.status >= 200 && r.status < 500 ? "ok" : "bad");
+      } catch {
+        setDot(chipHTTP, "bad");
+      }
     }
 
-    function uvUrl(target){
-      // Do NOT force "https://" in the visible bar
-      return self.__uv$config.prefix + Ultraviolet.codec.xor.encode(target);
+    async function probeWS() {
+      return new Promise((resolve) => {
+        try {
+          const ws = new WebSocket(WISP_WS);
+          let done = false;
+          const finish = (ok) => { if (done) return; done = true; try { ws.close(); } catch{} resolve(ok); };
+          ws.onopen = () => finish(true);
+          ws.onerror = () => finish(false);
+          setTimeout(() => finish(false), 2000);
+        } catch {
+          resolve(false);
+        }
+      }).then(ok => { setDot(chipWS, ok ? "ok" : "bad"); });
     }
 
-    async function navigate(input){
-      const t = input.trim(); if(!t) return;
-      urlBox.value = t; // keep exactly what user typed
-      const dest = isProbablyUrl(t) ? abs(t) : ("https://www.google.com/search?q=" + encodeURIComponent(t));
-      frame.src = uvUrl(dest);  // FULL PROXY via SW
-    }
+    // Fullscreen (honor site requests + let user press F11 on this shell)
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "F11") {
+        e.preventDefault();
+        const el = document.fullscreenElement ? document : view;
+        (document.fullscreenElement ? document.exitFullscreen() : view.requestFullscreen()).catch(()=>{});
+      }
+    });
 
-    $("#nav").addEventListener("submit", (e)=>{ e.preventDefault(); navigate(urlBox.value); });
-    $("#reload").addEventListener("click", ()=> frame.contentWindow?.location.reload());
-    $("#back").addEventListener("click", ()=> frame.contentWindow?.history.back());
-    $("#fwd").addEventListener("click", ()=> frame.contentWindow?.history.forward());
+    // Boot
+    (async () => {
+      configureUV();
 
-    (async ()=>{
-      await registerSW();
-      await health();
-      urlBox.value="google.com";        // search-first UX
-      navigate("google.com");
+      // Install SW first; if it registers we consider "transport" OK for HTTP path.
+      const swOk = await installSW();
+      await Promise.all([probeHTTP(), probeWS()]);
+
+      chipTransportText.textContent = swOk ? "transport: ready" : "transport: degraded";
+      setDot(chipTransport, swOk ? "ok" : "bad");
+
+      // Optional: focus the address bar
+      addr.focus();
     })();
   </script>
 </body>

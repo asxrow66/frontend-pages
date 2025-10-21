@@ -1,2 +1,4 @@
-// This wrapper pulls in the actual mux worker from your own origin.
-importScripts("/vendor/bare-mux/worker.js");
+// public/bare-mux-worker.js
+// We vendor the official worker at build time into /vendor/bare-mux-core.js.
+// (See the build step below.)
+importScripts("/vendor/bare-mux-core.js");
