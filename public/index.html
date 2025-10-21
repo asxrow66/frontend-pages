@@ -2,96 +2,37 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
-  />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Cloud Browser</title>
+  <meta name="robots" content="noindex,nofollow" />
   <style>
-    :root {
-      --bg: #0f1220;
-      --panel: #171a2a;
-      --accent: #6aa5ff;
-      --text: #e9edff;
-      --muted: #9aa3b2;
-      --danger: #ff6a6a;
-      --ok: #27c07d;
-      --shadow: 0 10px 30px rgba(0,0,0,.25);
-      --radius: 16px;
-    }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; background: var(--bg); color: var(--text); margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
-    .shell {
-      display: grid;
-      grid-template-rows: auto 1fr;
-      height: 100%;
-      gap: 10px;
-      padding: 14px;
-    }
-    .topbar {
-      background: var(--panel);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 10px;
-      display: grid;
-      grid-template-columns: auto 1fr auto auto;
-      gap: 10px;
-      align-items: center;
-    }
-    .btn {
-      border: 1px solid #2a2f45;
-      background: #121528;
-      color: var(--text);
-      padding: 8px 10px;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: transform .05s ease;
-      user-select: none;
-    }
-    .btn:hover { transform: translateY(-1px); }
-    .btn:active { transform: translateY(0); }
-    .omnibox {
-      display: flex; align-items: center; gap: 8px;
-      background: #0e1122; border: 1px solid #2a2f45;
-      border-radius: 12px; padding: 6px 10px;
-    }
-    .omnibox input {
-      flex: 1; background: transparent; border: 0; outline: 0; color: var(--text);
-      font-size: 14px;
-    }
-    .omnibox .badge {
-      font-size: 11px; color: var(--muted); border: 1px dashed #2a2f45; padding: 2px 6px; border-radius: 8px;
-    }
-    .status {
-      font-size: 12px; color: var(--muted);
-      display: inline-flex; gap: 10px; align-items: center;
-    }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); display: inline-block; }
-    .dot.ok { background: var(--ok); }
-    .viewport {
-      position: relative;
-      border-radius: var(--radius);
-      overflow: hidden;
-      box-shadow: var(--shadow);
-      background: #0b0e1c;
-    }
-    .viewport iframe {
-      width: 100%; height: 100%; border: 0; display: block;
-      background: #0b0e1c;
-    }
+    :root{--bg:#0f1220;--panel:#171a2a;--accent:#6aa5ff;--text:#e9edff;--muted:#9aa3b2;--ok:#27c07d;--danger:#ff6a6a;--border:#2a2f45;--radius:16px;--shadow:0 10px 30px rgba(0,0,0,.25)}
+    *{box-sizing:border-box} html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    .shell{display:grid;grid-template-rows:auto 1fr;gap:10px;height:100%;padding:14px}
+    .topbar{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);padding:10px}
+    .btn{border:1px solid var(--border);background:#121528;color:var(--text);padding:8px 10px;border-radius:10px;cursor:pointer}
+    .btn:hover{filter:brightness(1.1)}
+    .omnibox{display:flex;align-items:center;gap:8px;background:#0e1122;border:1px solid var(--border);border-radius:12px;padding:6px 10px}
+    .omnibox input{flex:1;background:transparent;border:0;outline:0;color:var(--text);font-size:14px}
+    .badge{font-size:11px;color:var(--muted);border:1px dashed var(--border);padding:2px 6px;border-radius:8px}
+    .status{font-size:12px;color:var(--muted);display:inline-flex;gap:10px;align-items:center}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--danger);display:inline-block}
+    .dot.ok{background:var(--ok)}
+    .viewport{position:relative;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);background:#0b0e1c}
+    iframe{width:100%;height:100%;border:0;background:#0b0e1c}
   </style>
 </head>
 <body>
   <div class="shell">
     <div class="topbar">
-      <div style="display:flex; gap:6px;">
-        <button class="btn" id="backBtn" title="Back">⟵</button>
-        <button class="btn" id="fwdBtn"  title="Forward">⟶</button>
-        <button class="btn" id="refreshBtn" title="Refresh">↻</button>
+      <div style="display:flex;gap:6px">
+        <button class="btn" id="backBtn" type="button" title="Back">⟵</button>
+        <button class="btn" id="fwdBtn" type="button" title="Forward">⟶</button>
+        <button class="btn" id="refreshBtn" type="button" title="Refresh">↻</button>
       </div>
 
       <form class="omnibox" id="omniform" autocomplete="off">
-        <span style="opacity:.8">🌐</span>
+        <span style="opacity:.85">🌐</span>
         <input id="omnibox" placeholder="Search or enter address" spellcheck="false" />
         <span class="badge" id="transportBadge">transport: connecting…</span>
       </form>
@@ -101,183 +42,109 @@
         <span class="dot" id="httpDot"></span><span>HTTP</span>
       </div>
 
-      <button class="btn" id="newTabBtn">＋</button>
+      <button class="btn" id="newTabBtn" type="button" title="New tab">＋</button>
     </div>
 
     <div class="viewport">
-      <iframe id="view" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-downloads" referrerpolicy="no-referrer"></iframe>
+      <iframe id="view"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-popups"
+              referrerpolicy="no-referrer"></iframe>
     </div>
   </div>
 
   <script type="module">
-    /**
-     * --- CONFIG ---
-     * Update these if you change endpoints.
-     */
     const WISP_ENDPOINTS = [
-      // Your Koyeb Wisp (use wss:// when you put Cloudflare in front or Koyeb TLS)
-      "wss://voiceless-dorry-nothinggames-cd908596.koyeb.app",
-      // Public fallback
-      "wss://wisp.mercurywork.shop/"
+      "wss://voiceless-dorry-nothinggames-cd908596.koyeb.app"
     ];
+    const HOMEPAGE = "https://www.google.com/";
 
-    // Your Cloudflare Worker Bare server (already deployed)
-    const BARE_BASE = "https://bare-transport.jcullenr1236496.workers.dev";
-
-    /**
-     * Imports (CDN ESM). We do NOT import any "connect" symbol—v2 uses BareMuxConnection.setTransport(...)
-     * Refs: bare-mux + epoxy-transport docs
-     * */
     import { BareMuxConnection, BareClient } from "https://esm.sh/@mercuryworkshop/bare-mux@2.1.7?bundle";
+    const EPOXY_MOD_URL = "https://cdn.jsdelivr.net/npm/@mercuryworkshop/epoxy-transport@2.1.28/lib/index.mjs";
 
-    const EPOXY_MOD_URL = "https://cdn.jsdelivr.net/npm/@mercuryworkshop/epoxy-transport@2.1.28/lib/index.mjs"; // module URL for setTransport
-    // Optional: a plain bare-client transport module if you ever want to swap back explicitly
-    // const BARE_TRANSPORT_URL = "https://cdn.jsdelivr.net/npm/@mercuryworkshop/bare-client-custom@latest/index.mjs";
-
-    /** UI bits */
-    const badge = document.getElementById("transportBadge");
-    const wsDot = document.getElementById("wsDot");
+    const badge   = document.getElementById("transportBadge");
+    const wsDot   = document.getElementById("wsDot");
     const httpDot = document.getElementById("httpDot");
-    const view = document.getElementById("view");
-    const omniform = document.getElementById("omniform");
-    const omnibox = document.getElementById("omnibox");
+    const view    = document.getElementById("view");
+    const form    = document.getElementById("omniform");
+    const box     = document.getElementById("omnibox");
     const backBtn = document.getElementById("backBtn");
-    const fwdBtn = document.getElementById("fwdBtn");
+    const fwdBtn  = document.getElementById("fwdBtn");
     const refreshBtn = document.getElementById("refreshBtn");
 
-    function setDot(el, ok) { el.classList.toggle("ok", !!ok); }
-    function setBadge(txt) { badge.textContent = `transport: ${txt}`; }
+    const setDot = (el, ok) => el.classList.toggle("ok", !!ok);
+    const setBadge = (txt) => badge.textContent = "transport: " + txt;
 
-    /** URL parsing with Google fallback */
     function toUrlOrSearch(input) {
-      const s = input.trim();
-      // if looks like a scheme or domain.tld[/...]
-      const hasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(s);
-      const looksLikeHost = /^[^\s/]+\.[^\s/]+/.test(s);
-      if (hasScheme) return s;
-      if (looksLikeHost) return "https://" + s;
-      const q = encodeURIComponent(s);
-      return `https://www.google.com/search?q=${q}`;
+      const s = (input || "").trim();
+      if (!s) return HOMEPAGE;
+      const scheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(s);
+      const looksHost = /^[^\s/]+\.[^\s/]+/.test(s);
+      if (scheme) return s;
+      if (looksHost) return "https://" + s;
+      return "https://www.google.com/search?q=" + encodeURIComponent(s);
     }
 
-    /**
-     * Boot the mux SharedWorker, then load EpoxyTransport (Wisp), else fall back to direct Bare over your Worker.
-     */
-    let muxConn = null;
     let bare = null;
+    let transportReady = false;
 
     async function initTransports() {
       setBadge("connecting…");
       try {
-        // 1) Start bare-mux shared worker
-        muxConn = new BareMuxConnection(
-          // worker module shipped in the bare-mux package
-          "https://cdn.jsdelivr.net/npm/@mercuryworkshop/bare-mux@2.1.7/lib/worker.js"
-        );
+// ✅ use the same-origin shim you added at public/bare-mux-worker.js
+const mux = new BareMuxConnection("/bare-mux-worker.js");
 
-        // 2) Try Epoxy/Wisp first (for WS + E2E)
-        let epoxyOk = false, epoxyErr = null;
+
+        let ok = false, lastErr = null;
         for (const w of WISP_ENDPOINTS) {
           try {
-            await muxConn.setTransport(EPOXY_MOD_URL, [{ wisp: w }]);
-            epoxyOk = true;
-            setBadge("epoxy+wisp");
-            setDot(wsDot, true);
-            break;
-          } catch (e) {
-            epoxyErr = e;
-          }
+            await mux.setTransport(EPOXY_MOD_URL, [{ wisp: w }]);
+            ok = true; break;
+          } catch (e) { lastErr = e; }
         }
+        if (!ok) throw lastErr || new Error("no wisp transport available");
 
-        // 3) Create a Bare client (uses whatever transport the mux has)
         bare = new BareClient();
-
-        // 4) If epoxy failed everywhere, fall back to your Cloudflare Worker bare server
-        if (!epoxyOk) {
-          // “bare-transport” path uses the Worker as HTTP/WS transport
-          // For v2, the direct BareClient can talk to a bare server by prefixing requests.
-          // We’ll keep a small wrapper so navigation goes through BARE_BASE.
-          setBadge("cloudflare-bare");
-          setDot(wsDot, true); // your Worker supports WS
-        }
-
+        transportReady = true;
+        setBadge("epoxy+wisp");
+        setDot(wsDot, true);
         setDot(httpDot, true);
       } catch (err) {
         console.error("transport init failed", err);
         setBadge("error");
-        setDot(httpDot, false);
         setDot(wsDot, false);
+        setDot(httpDot, false);
+        transportReady = false;
       }
     }
 
     await initTransports();
 
-    /**
-     * Simple navigation:
-     *  - If Epoxy/Wisp is active, we can just remote-fetch and write HTML into the iframe via a blob URL.
-     *  - If we’re using your Cloudflare bare server, we’ll route by rewriting the URL to the bare endpoint.
-     *
-     * NOTE: This is intentionally minimal. Scramjet/Ultraviolet do far more rewriting; this is a lightweight demo.
-     */
     async function navigate(raw) {
       const target = toUrlOrSearch(raw);
-      let viaEpoxy = badge.textContent.includes("epoxy+wisp");
-
+      if (!transportReady || !bare) { alert("Transport not ready."); return; }
       try {
-        if (viaEpoxy) {
-          // Use bare-mux client fetch (proxied over Epoxy/Wisp)
-          const resp = await bare.fetch(target);
-          const ct = resp.headers.get("content-type") || "";
-          // If it’s HTML, stream to iframe; otherwise, download through the browser
-          if (ct.includes("text/html")) {
-            const blob = await resp.blob();
-            const url = URL.createObjectURL(blob);
-            view.src = url;
-          } else {
-            // Non-HTML; just open directly proxied
-            const blob = await resp.blob();
-            const url = URL.createObjectURL(blob);
-            view.src = url;
-          }
-        } else {
-          // Fallback: send the iframe to your bare Worker’s path scheme:
-          // The common convention is `${BARE_BASE}/v1/` + encoded URL for GET.
-          // bare-mux BareClient also supports createWebSocket under this transport.
-          const encoded = encodeURIComponent(target);
-          view.src = `${BARE_BASE}/v1/?url=${encoded}&method=GET`;
-        }
-      } catch (err) {
-        console.error("navigate error", err);
-        alert("Navigation failed. Check console for details.");
-      }
-    }
-
-    omniform.addEventListener("submit", (e) => {
-      e.preventDefault();
-      navigate(omnibox.value);
-    });
-
-    refreshBtn.addEventListener("click", () => view.contentWindow?.location?.reload());
-    backBtn.addEventListener("click", () => view.contentWindow?.history?.back());
-    fwdBtn.addEventListener("click", () => view.contentWindow?.history?.forward());
-
-    // Optional: ping a websocket to prove WS works
-    async function smokeWs() {
-      try {
-        const ws = bare.createWebSocket("wss://echo.websocket.events");
-        ws.onopen = () => ws.send("hello from epoxy/bare 🎯");
-        ws.onmessage = (e) => {
-          console.log("echo:", e.data);
-          ws.close();
-        };
+        const res = await bare.fetch(target, { method: "GET" });
+        const ct = (res.headers.get("content-type") || "").toLowerCase();
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        view.src = url;
+        view.addEventListener("load", () => setTimeout(() => URL.revokeObjectURL(url), 500), { once:true });
       } catch (e) {
-        console.warn("WS smoke failed", e);
+        console.error("navigate error", e);
+        const errHtml = `<!doctype html><meta charset="utf-8"><body style="background:#0b0e14;color:#e8f0fe;font-family:system-ui"><div style="max-width:860px;margin:8vh auto;padding:24px"><h2>Load error</h2><pre style="background:#111319;border:1px solid #1b1f2a;border-radius:10px;padding:12px;white-space:pre-wrap">${(e&&e.stack)||e}</pre></div></body>`;
+        const blob = new Blob([errHtml], { type: "text/html" });
+        view.src = URL.createObjectURL(blob);
       }
     }
-    smokeWs();
 
-    // Expose for debugging or your other scripts
-    window.__BARE = bare;
+    form.addEventListener("submit", (e)=>{ e.preventDefault(); navigate(box.value); });
+    refreshBtn.addEventListener("click", ()=>view.contentWindow?.location?.reload());
+    backBtn.addEventListener("click", ()=>view.contentWindow?.history?.back());
+    fwdBtn.addEventListener("click", ()=>view.contentWindow?.history?.forward());
+
+    navigate(HOMEPAGE);
+    // optional WS smoke:
+    try { if (transportReady && bare) { const ws = bare.createWebSocket("wss://echo.websocket.events"); ws.onopen=()=>ws.send("hi"); ws.onmessage=(e)=>{console.log("echo",e.data); ws.close();}; } } catch {}
   </script>
 </body>
 </html>
