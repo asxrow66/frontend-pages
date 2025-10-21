@@ -1,16 +1,13 @@
 // Endpoints baked in — your running instances:
 const DEFAULT_BARE = "https://bare-transport.jcullenr1236496.workers.dev/";
-const DEFAULT_WISP = "wss://voiceless-dorry-nothinggames-cd908596.koyeb.app/";
 
-// Load libs via ESM
+// Load Bare via ESM
 import { BareClient } from "https://esm.sh/@mercuryworkshop/bare-mux@2?bundle";
-import { connect as wispConnect } from "https://esm.sh/@mercuryworkshop/epoxy-transport@2?bundle";
 
-// Get effective config (allow overrides via localStorage if you ever add a UI)
+// Get effective config (allows future overrides via localStorage)
 function getCfg() {
   const bare = (localStorage.getItem("cfg.bare") || DEFAULT_BARE).trim();
-  const wisp = (localStorage.getItem("cfg.wisp") || DEFAULT_WISP).trim();
-  return { bare: bare.endsWith("/") ? bare : bare + "/", wisp };
+  return { bare: bare.endsWith("/") ? bare : bare + "/" };
 }
 
 export function makeBare() {
@@ -23,8 +20,4 @@ export async function bareFetch(url, init = {}) {
   return bare.fetch(url, init);
 }
 
-// For completeness if you later add WS features
-export async function openWisp() {
-  const { wisp } = getCfg();
-  return wispConnect(wisp);
-}
+// If/when you actually need Wisp later, we’ll add a correct epoxy import then.
