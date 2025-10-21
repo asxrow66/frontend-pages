@@ -9,32 +9,55 @@ const fwdBtn = $("#forward");
 const reloadBtn = $("#reload");
 const schemeEl = $("#scheme");
 
-// Very simple in-memory history for the session
+// Simple session history
 const historyStack = [];
 let historyIndex = -1;
 let currentUrl = "";
 
-// Normalize user input into a full https:// URL
-function normalizeInput(val) {
-  val = (val || "").trim();
-  if (!val) return "";
+// Search engine (change here if you want another provider)
+const SEARCH_BASE = "https://www.google.com/search?q=";
+const HOMEPAGE = "https://www.google.com/";
+
+// --- Omnibox helpers ---
+
+function isLikelyUrl(input) {
+  const s = input.trim();
+  if (!s) return false;
+  // If it parses as a URL, it's a URL.
   try {
-    // If it already looks like a URL with a scheme, trust it
-    const u = new URL(val);
-    return u.href;
-  } catch {
-    // If user typed "example.com", assume https://
-    return `https://${val}`;
-  }
+    // Accept explicit schemes
+    const u = new URL(s);
+    return !!u.protocol;
+  } catch {}
+  // If it has spaces, treat as search (unless it's a data/mailto etc., which we don't support here)
+  if (/\s/.test(s)) return false;
+  // Heuristics: contains a dot or is localhost or has a slash segment
+  if (s.includes(".") || s.startsWith("localhost") || s.includes("/")) return true;
+  return false;
 }
 
-// Update UI state
+function toUrlOrSearch(input) {
+  const s = (input || "").trim();
+  if (!s) return HOMEPAGE; // empty → homepage
+  if (isLikelyUrl(s)) {
+    // Add https:// if user omitted scheme
+    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(s)) return s;
+    return `https://${s}`;
+  }
+  // Otherwise: Google search
+  return SEARCH_BASE + encodeURIComponent(s);
+}
+
+// --- UI/State ---
+
 function setBusy(b) { spinner.classList.toggle("active", !!b); }
+
 function updateNavButtons() {
   backBtn.disabled = !(historyIndex > 0);
   fwdBtn.disabled = !(historyIndex >= 0 && historyIndex < historyStack.length - 1);
   reloadBtn.disabled = !(historyIndex >= 0);
 }
+
 function updateAddressBar(u) {
   try {
     const parsed = new URL(u);
@@ -46,13 +69,10 @@ function updateAddressBar(u) {
   }
 }
 
-// Render HTML into the iframe using a Blob URL
 async function renderViaBlob(html) {
   const blob = new Blob([html], { type: "text/html" });
   const blobUrl = URL.createObjectURL(blob);
-  // Load it
   view.src = blobUrl;
-  // Revoke once loaded to free memory
   await new Promise((res) => {
     const onload = () => { view.removeEventListener("load", onload); res(); };
     view.addEventListener("load", onload);
@@ -60,9 +80,6 @@ async function renderViaBlob(html) {
   setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
 }
 
-// Minimal HTML rewrite: inject <base> so some relative links resolve,
-// and add <meta name=referrer content=no-referrer> for privacy.
-// (Note: many assets still won't load due to CSP; this is a light client-side viewer.)
 function rewriteHtml(html, baseHref) {
   let output = html;
   const hasHead = /<head[^>]*>/i.test(output);
@@ -71,17 +88,16 @@ function rewriteHtml(html, baseHref) {
   const charset = `<meta charset="utf-8">`;
 
   if (hasHead) {
-    output = output.replace(/<head[^>]*>/i, match => `${match}\n${charset}\n${baseTag}\n${refMeta}`);
+    output = output.replace(/<head[^>]*>/i, (m) => `${m}\n${charset}\n${baseTag}\n${refMeta}`);
   } else {
     output = `<!doctype html><head>${charset}${baseTag}${refMeta}</head>${output}`;
   }
   return output;
 }
 
-// Navigate (push into history)
+// Core navigation
 async function navigate(inputValue, { push = true } = {}) {
-  const href = normalizeInput(inputValue);
-  if (!href) return;
+  const href = toUrlOrSearch(inputValue);
   setBusy(true);
   try {
     const res = await bareFetch(href, { method: "GET" });
@@ -94,7 +110,6 @@ async function navigate(inputValue, { push = true } = {}) {
     updateAddressBar(currentUrl);
 
     if (push) {
-      // Trim forward history
       historyStack.splice(historyIndex + 1);
       historyStack.push(currentUrl);
       historyIndex = historyStack.length - 1;
@@ -115,7 +130,7 @@ async function navigate(inputValue, { push = true } = {}) {
   }
 }
 
-// History navigation
+// History controls
 async function goBack() {
   if (historyIndex <= 0) return;
   historyIndex -= 1;
@@ -136,12 +151,12 @@ async function reload() {
 // Wire UI
 $("#nav").addEventListener("submit", (e) => {
   e.preventDefault();
-  const val = urlBox.value.trim();
+  const val = urlBox.value;
   navigate(val);
 });
 backBtn.addEventListener("click", goBack);
 fwdBtn.addEventListener("click", goForward);
 reloadBtn.addEventListener("click", reload);
 
-// Initial page
-navigate("https://google.com");
+// Start on Google (so users can search without typing a URL)
+navigate(HOMEPAGE);
