@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Transport Frontend</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <meta name="robots" content="noindex,nofollow" />
+</head>
+<body>
+  <main class="wrap">
+    <h1>Transport Frontend</h1>
+    <p class="sub">Paste your endpoints once, they’ll be saved in this browser.</p>
+
+    <section class="card">
+      <h2>Transport Endpoints</h2>
+      <label>BARE_URL (Cloudflare Worker)</label>
+      <input id="bareUrl" placeholder="https://bare-transport.<account>.workers.dev/" />
+      <label>WISP_URL (Koyeb)</label>
+      <input id="wispUrl" placeholder="wss://<subdomain>.koyeb.app/" />
+      <div class="row">
+        <button id="saveCfg">Save</button>
+        <button id="loadCfg" class="ghost">Load Saved</button>
+        <button id="clearCfg" class="ghost">Clear</button>
+        <button id="prefill" class="ghost">Prefill with my values</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Quick Tests</h2>
+      <div class="row">
+        <input id="testUrl" placeholder="https://example.com" />
+        <button id="testBare">Test via Bare (HTTP)</button>
+        <button id="testWisp">Test Wisp handshake</button>
+      </div>
+      <pre id="log" class="log"></pre>
+    </section>
+
+    <section class="card">
+      <h2>Open a Site via Bare</h2>
+      <div class="row">
+        <input id="openUrl" placeholder="https://example.com" />
+        <button id="openBtn">Open</button>
+      </div>
+      <iframe id="viewer" title="Preview" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer"></iframe>
+    </section>
+  </main>
+
+  <script type="module" src="https://esm.sh/@mercuryworkshop/bare-mux@2?bundle"></script>
+  <script type="module" src="https://esm.sh/@mercuryworkshop/epoxy-transport@2?bundle"></script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
