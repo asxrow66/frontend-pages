@@ -1,7 +1,0 @@
-{
-  "name": "frontend-pages",
-  "private": true,
-  "scripts": {
-    "start": "npx serve public -p 5173"
-  }
-}
