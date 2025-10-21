@@ -7,14 +7,13 @@ const spinner = $("#spinner");
 const backBtn = $("#back");
 const fwdBtn = $("#forward");
 const reloadBtn = $("#reload");
-const schemeEl = $("#scheme");
 
 // Simple session history
 const historyStack = [];
 let historyIndex = -1;
 let currentUrl = "";
 
-// Search engine (change here if you want another provider)
+// Search engine + homepage
 const SEARCH_BASE = "https://www.google.com/search?q=";
 const HOMEPAGE = "https://www.google.com/";
 
@@ -23,28 +22,22 @@ const HOMEPAGE = "https://www.google.com/";
 function isLikelyUrl(input) {
   const s = input.trim();
   if (!s) return false;
-  // If it parses as a URL, it's a URL.
   try {
-    // Accept explicit schemes
-    const u = new URL(s);
+    const u = new URL(s); // explicit scheme -> URL
     return !!u.protocol;
   } catch {}
-  // If it has spaces, treat as search (unless it's a data/mailto etc., which we don't support here)
-  if (/\s/.test(s)) return false;
-  // Heuristics: contains a dot or is localhost or has a slash segment
+  if (/\s/.test(s)) return false; // spaces => search
   if (s.includes(".") || s.startsWith("localhost") || s.includes("/")) return true;
   return false;
 }
 
 function toUrlOrSearch(input) {
   const s = (input || "").trim();
-  if (!s) return HOMEPAGE; // empty → homepage
+  if (!s) return HOMEPAGE;
   if (isLikelyUrl(s)) {
-    // Add https:// if user omitted scheme
     if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(s)) return s;
     return `https://${s}`;
   }
-  // Otherwise: Google search
   return SEARCH_BASE + encodeURIComponent(s);
 }
 
@@ -58,13 +51,12 @@ function updateNavButtons() {
   reloadBtn.disabled = !(historyIndex >= 0);
 }
 
+// Show URL without the scheme in the box
 function updateAddressBar(u) {
   try {
-    const parsed = new URL(u);
-    schemeEl.textContent = parsed.protocol + "//";
-    urlBox.value = parsed.host + parsed.pathname + parsed.search + parsed.hash;
+    const p = new URL(u);
+    urlBox.value = p.host + p.pathname + p.search + p.hash;
   } catch {
-    schemeEl.textContent = "https://";
     urlBox.value = u;
   }
 }
@@ -86,7 +78,6 @@ function rewriteHtml(html, baseHref) {
   const baseTag = `<base href="${baseHref}">`;
   const refMeta = `<meta name="referrer" content="no-referrer">`;
   const charset = `<meta charset="utf-8">`;
-
   if (hasHead) {
     output = output.replace(/<head[^>]*>/i, (m) => `${m}\n${charset}\n${baseTag}\n${refMeta}`);
   } else {
@@ -151,12 +142,11 @@ async function reload() {
 // Wire UI
 $("#nav").addEventListener("submit", (e) => {
   e.preventDefault();
-  const val = urlBox.value;
-  navigate(val);
+  navigate(urlBox.value);
 });
 backBtn.addEventListener("click", goBack);
 fwdBtn.addEventListener("click", goForward);
 reloadBtn.addEventListener("click", reload);
 
-// Start on Google (so users can search without typing a URL)
+// Start on Google so it works as a search bar immediately
 navigate(HOMEPAGE);
