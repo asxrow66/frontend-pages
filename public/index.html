@@ -2,250 +2,208 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title></title>
-
-  <!-- Ultraviolet core (already in your repo) -->
-  <script src="/uv.bundle.js" defer></script>
-  <script src="/uv.config.js" defer></script>
-
-  <!-- Status chips + nav styles -->
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
+  <title>Cloud Browser</title>
   <style>
-    :root {
-      --bg: #0f1320;
-      --bg-soft: #151a2c;
-      --chip: #1b2139;
-      --text: #d6d9e6;
-      --muted: #9aa3b2;
-      --accent: #6ea8fe;
-      --ok: #27c281;
-      --warn: #f0a500;
-      --bad: #ff6b6b;
-      --ring: #2a3357;
+    :root{
+      --bg:#0f172a; --bg2:#0b1226; --chip:#172033; --chip-on:#123a2a;
+      --fg:#e5e7eb; --muted:#aeb4c0; --accent:#3b82f6; --warn:#f59e0b; --err:#ef4444; --ok:#22c55e;
+      --radius:12px;
     }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif; }
-    .bar {
-      display: grid;
-      grid-template-columns: auto auto 1fr auto auto auto;
-      gap: 10px;
-      align-items: center;
-      padding: 10px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0)) , var(--bg);
-      border-bottom: 1px solid var(--ring);
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:linear-gradient(180deg,var(--bg),var(--bg2));
+      color:var(--fg); font:14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial;
+      height:100dvh; display:flex; flex-direction:column; gap:10px; padding:10px;
     }
-    .btn {
-      height: 44px; width: 64px;
-      display: grid; place-items: center;
-      background: var(--bg-soft);
-      border: 1px solid var(--ring);
-      border-radius: 14px;
-      cursor: pointer;
-      transition: 120ms ease;
+    .bar{
+      display:grid; grid-template-columns:auto auto 1fr auto auto; gap:10px; align-items:center;
     }
-    .btn:active { transform: translateY(1px); }
-    .btn svg { width: 22px; height: 22px; stroke: var(--text); }
-    .addr-wrap {
-      height: 44px; display: grid; align-items: center;
-      background: var(--bg-soft);
-      border: 1px solid var(--ring); border-radius: 14px; padding: 0 14px;
+    .btn{
+      width:44px;height:44px; border-radius:14px; background:#111a2e; border:1px solid #1c2741;
+      display:grid; place-items:center; cursor:pointer; transition:transform .06s ease, background .15s;
     }
-    #address {
-      width: 100%; height: 40px; outline: none; border: 0;
-      background: transparent; color: var(--text);
-      font-size: 16px;
+    .btn:hover{ background:#15203a }
+    .btn:active{ transform:scale(.98) }
+    .btn svg{ width:22px;height:22px; stroke:var(--fg)}
+    .url{
+      height:44px; border-radius:14px; background:#0f1a30; border:1px solid #1c2741; color:var(--fg);
+      padding:0 14px; width:100%; outline:none; font-size:16px;
     }
-    .chip {
-      display: inline-grid; grid-auto-flow: column; align-items: center; gap: 8px;
-      height: 44px; padding: 0 14px;
-      background: var(--chip);
-      border: 1px solid var(--ring); border-radius: 14px; color: var(--text);
-      font-size: 14px;
+    .chips{display:flex; gap:10px}
+    .chip{
+      height:44px; display:flex; align-items:center; gap:10px;
+      background:#101a2f; border:1px solid #1c2741; padding:0 14px; border-radius:14px; color:var(--muted);
+      white-space:nowrap;
     }
-    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--warn); }
-    .dot.ok { background: var(--ok); }
-    .dot.bad { background: var(--bad); }
-
-    .stage { height: calc(100% - 66px); }
-    #view {
-      width: 100%; height: 100%; border: 0; display: block;
-      background: #000;
+    .dot{width:10px;height:10px;border-radius:50%}
+    .dot.err{ background:var(--err) } .dot.warn{ background:var(--warn) } .dot.ok{ background:var(--ok) }
+    iframe{
+      width:100%; flex:1 1 auto; border:none; border-radius:16px; background:#000;
     }
+    .hidden{ display:none !important }
   </style>
+
+  <!-- Ultraviolet runtime (same-origin) -->
+  <script src="/uv.bundle.js"></script>
+  <script src="/uv.config.js"></script>
+
+  <!-- Bare-Mux (same-origin, ESM) -->
+  <script type="module">
+    import { BareMux } from '/bare-mux.bundle.mjs';
+
+    // --- endpoints you control ---
+    const BARE_ORIGIN = 'https://bare-transport.jcullenr1236496.workers.dev';
+    const WISP_WS     = 'wss://voiceless-dorry-nothinggames-cd908596.koyeb.app';
+
+    // --- UI refs
+    const $ = sel => document.querySelector(sel);
+    const urlBar = $('#url');
+    const frame  = $('#view');
+    const chipTransport = $('#chip-transport');
+    const chipWs  = $('#chip-ws');
+    const chipHttp= $('#chip-http');
+
+    // Pretty statuses
+    const setChip = (chip, status, text) => {
+      const dot = chip.querySelector('.dot');
+      dot.className = 'dot ' + (status === 'ok' ? 'ok' : status === 'warn' ? 'warn' : 'err');
+      chip.lastChild.textContent = ' ' + text;
+    };
+
+    // --- SharedWorker (must be same-origin)
+    const mux = new BareMux({
+      worker: '/bare-mux-worker.js',
+      // Route prefix for /v1 requests the client emits
+      // We point to your Cloudflare Worker using full URL:
+      // (Bare-Mux only needs the absolute origin for HTTP)
+      http: { origin: BARE_ORIGIN },
+      ws:   { url: WISP_WS }
+    });
+
+    // Update status while connecting
+    setChip(chipTransport, 'warn', 'transport: connecting…');
+    setChip(chipWs, 'warn', 'WS');
+    setChip(chipHttp, 'warn', 'HTTP');
+
+    // Smoke tests
+    const wsProbe = new Promise(res => {
+      try {
+        const s = new WebSocket(WISP_WS);
+        s.onopen = () => { s.close(); res(true); };
+        s.onerror = () => res(false);
+      } catch { res(false); }
+    });
+    const httpProbe = fetch(BARE_ORIGIN + '/v1/', { method:'HEAD', mode:'no-cors' })
+      .then(() => true).catch(() => false);
+
+    Promise.all([wsProbe, httpProbe]).then(([wsOk, httpOk]) => {
+      setChip(chipWs,   wsOk   ? 'ok' : 'err', 'WS');
+      setChip(chipHttp, httpOk ? 'ok' : 'err', 'HTTP');
+      const overall = (wsOk && httpOk) ? ['ok','ready'] : ['warn','degraded'];
+      setChip(chipTransport, overall[0], `transport: ${overall[1]}`);
+    });
+
+    // --- Ultraviolet service worker (needed for full HTTP proxying)
+    async function readyUv() {
+      if (!('serviceWorker' in navigator)) throw new Error('SW unsupported');
+      // Important: scope must include where we’ll navigate ("/")
+      await navigator.serviceWorker.register('/uv.sw.js', { scope: '/' });
+      await navigator.serviceWorker.ready;
+    }
+
+    // Helpers: url or search
+    const looksLikeUrl = (v) => {
+      const hasScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(v);
+      const hasDot = /\./.test(v);
+      return hasScheme || hasDot;
+    };
+    const toUrl = (v) => {
+      v = v.trim();
+      if (!v) return '';
+      if (!looksLikeUrl(v)) {
+        // Google search when not a URL
+        return `https://www.google.com/search?q=${encodeURIComponent(v)}`;
+      }
+      if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(v)) {
+        // no scheme → default to https
+        return 'https://' + v;
+      }
+      return v;
+    };
+
+    async function navigate(raw) {
+      const target = toUrl(raw);
+      if (!target) return;
+      // UV uses a path prefix; __uv$config is exposed by uv.config.js
+      // The SW will rewrite everything under this prefix.
+      const encoded = __uv$config.encodeUrl(target);
+      frame.src = __uv$config.prefix + encoded;
+    }
+
+    // UI wiring
+    urlBar.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        navigate(urlBar.value);
+      }
+    });
+    $('#btn-back').onclick = () => frame.contentWindow?.history?.back?.();
+    $('#btn-fwd').onclick  = () => frame.contentWindow?.history?.forward?.();
+    $('#btn-reload').onclick = () => {
+      // If we’re on UV, reload the iframe; otherwise re-navigate
+      try { frame.contentWindow?.location?.reload(); } catch { navigate(urlBar.value); }
+    };
+
+    // Allow programmatic fullscreen if site asks (and a manual button if you want later)
+    document.addEventListener('fullscreenerror', () => {
+      console.warn('Fullscreen request failed');
+    });
+
+    // Init
+    readyUv().catch(err => {
+      setChip(chipTransport, 'err', 'transport: SW failed');
+      console.error(err);
+    });
+
+    // Default start page: blank URL bar but shows Google on Enter even w/out scheme
+    urlBar.placeholder = 'Type a URL or search Google';
+  </script>
 </head>
+
 <body>
   <div class="bar">
-    <!-- (Removed “Cloud Browser” label and “+” new-tab button) -->
-    <button class="btn" id="back" title="Back">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
-        <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+    <button id="btn-back" class="btn" title="Back" aria-label="Back">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M15 19l-7-7 7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
-    <button class="btn" id="forward" title="Forward">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
-        <path d="M9 6l6 6-6 6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+    <button id="btn-fwd" class="btn" title="Forward" aria-label="Forward">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
-    <button class="btn" id="reload" title="Reload">
-      <!-- circular arrow icon -->
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
-        <path d="M3 12a9 9 0 1 0 3-6.708" stroke="currentColor" stroke-linecap="round"/>
-        <path d="M3 4v4h4" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+    <button id="btn-reload" class="btn" title="Reload" aria-label="Reload">
+      <!-- circular refresh icon -->
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M20 12a8 8 0 10-3 6.2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M20 7v5h-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </button>
 
-    <form class="addr-wrap" id="nav">
-      <input id="address" placeholder="Type a URL or search Google" autocomplete="off" spellcheck="false" />
-    </form>
+    <input id="url" class="url" autocomplete="off" spellcheck="false" />
 
-    <div class="chip"><span class="dot" id="chip-transport"></span><span id="chip-transport-text">transport: connecting…</span></div>
-    <div class="chip"><span class="dot" id="chip-ws"></span>WS</div>
-    <div class="chip"><span class="dot" id="chip-http"></span>HTTP</div>
+    <div class="chips">
+      <div id="chip-transport" class="chip"><span class="dot warn"></span> transport: connecting…</div>
+      <div id="chip-ws" class="chip"><span class="dot warn"></span> WS</div>
+      <div id="chip-http" class="chip"><span class="dot warn"></span> HTTP</div>
+    </div>
   </div>
 
-  <main class="stage">
-    <!-- Allow fullscreen & lots of capabilities for things like GeForce NOW -->
-    <iframe id="view"
-      sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads"
-      allow="fullscreen *; autoplay *; gamepad *; clipboard-read *; clipboard-write *; xr-spatial-tracking *; geolocation *; microphone *; camera *; display-capture *; midi *; encrypted-media *"
-      allowfullscreen
-    ></iframe>
-  </main>
-
-  <script type="module">
-    // -------------------------
-    // EDIT THESE 3 ENDPOINTS
-    // -------------------------
-    const PAGES_ORIGIN = location.origin; // your Pages site (this page)
-    const BARE_HTTP    = "https://bare-transport.jcullenr1236496.workers.dev"; // Cloudflare Worker Bare HTTP
-    const WISP_WS      = "wss://voiceless-dorry-nothinggames-cd908596.koyeb.app"; // Koyeb Wisp for WS
-
-    // IMPORTANT: your Koyeb env must be EXACT origin without trailing slash:
-    //   ALLOW_ORIGIN = https://frontend-pages-dfl.pages.dev
-
-    // 1) Register UV service worker (drives HTTP proxying)
-    async function installSW() {
-      if (!("serviceWorker" in navigator)) return false;
-      try {
-        await navigator.serviceWorker.register("/uv.sw.js", { scope: "/" });
-        await navigator.serviceWorker.ready;
-        return true;
-      } catch {
-        return false;
-      }
-    }
-
-    // 2) Tell UV where the Bare server lives (HTTP) and the mux worker path (WS)
-    //    We keep the input as typed; no forced "https://" in the UI.
-    //    UV will encode it under the hood.
-    function configureUV() {
-      // bare endpoint (HTTP). UV expects a base URL that it will append /v1 automatically.
-      // Keep a trailing slash.
-      if (window.__uv$config) {
-        __uv$config.bare = BARE_HTTP.endsWith("/") ? BARE_HTTP : BARE_HTTP + "/";
-      }
-
-      // Where Bare-Mux worker is hosted (must be SAME ORIGIN!)
-      // We self-host at /bare-mux-worker.js (added below).
-      window.__BARE_MUX_WORKER_URL = "/bare-mux-worker.js";
-
-      // Where WebSockets should tunnel to (Wisp server)
-      window.__WISP_ENDPOINT = WISP_WS;
-    }
-
-    // 3) Minimal navigation helpers
-    const addr = document.getElementById("address");
-    const view = document.getElementById("view");
-
-    function toTarget(input) {
-      const s = input.trim();
-      // If it looks like a URL with a dot or has a scheme, build URL. Else use Google search.
-      const looksLikeURL = /^[a-z]+:\/\//i.test(s) || (s.includes(".") && !s.includes(" "));
-      const target = looksLikeURL ? ( /^[a-z]+:\/\//i.test(s) ? s : `https://${s}` )
-                                  : `https://www.google.com/search?q=${encodeURIComponent(s)}`;
-      return target;
-    }
-
-    function uvEncode(url) {
-      // Provided by uv.bundle.js
-      return __uv$config.prefix + __uv$config.encodeUrl(url);
-    }
-
-    document.getElementById("nav").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const target = toTarget(addr.value);
-      view.src = uvEncode(target);
-    });
-
-    // Back/forward/reload
-    document.getElementById("back").onclick = () => view.contentWindow?.history.back();
-    document.getElementById("forward").onclick = () => view.contentWindow?.history.forward();
-    document.getElementById("reload").onclick = () => {
-      // Try to reload the frame if it already navigated, otherwise reload this page.
-      if (view.src) view.contentWindow?.location.reload();
-      else location.reload();
-    };
-
-    // 4) Status chips
-    const chipTransport = document.getElementById("chip-transport");
-    const chipTransportText = document.getElementById("chip-transport-text");
-    const chipHTTP = document.getElementById("chip-http");
-    const chipWS = document.getElementById("chip-ws");
-
-    const setDot = (el, state) => {
-      el.classList.remove("ok", "bad");
-      if (state === "ok") el.classList.add("ok");
-      else if (state === "bad") el.classList.add("bad");
-    };
-
-    async function probeHTTP() {
-      // We don't send Bare headers here on purpose; we only care that the origin is reachable.
-      try {
-        const r = await fetch(BARE_HTTP + (BARE_HTTP.endsWith("/") ? "" : "/"), { mode: "cors" });
-        setDot(chipHTTP, r.status >= 200 && r.status < 500 ? "ok" : "bad");
-      } catch {
-        setDot(chipHTTP, "bad");
-      }
-    }
-
-    async function probeWS() {
-      return new Promise((resolve) => {
-        try {
-          const ws = new WebSocket(WISP_WS);
-          let done = false;
-          const finish = (ok) => { if (done) return; done = true; try { ws.close(); } catch{} resolve(ok); };
-          ws.onopen = () => finish(true);
-          ws.onerror = () => finish(false);
-          setTimeout(() => finish(false), 2000);
-        } catch {
-          resolve(false);
-        }
-      }).then(ok => { setDot(chipWS, ok ? "ok" : "bad"); });
-    }
-
-    // Fullscreen (honor site requests + let user press F11 on this shell)
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "F11") {
-        e.preventDefault();
-        const el = document.fullscreenElement ? document : view;
-        (document.fullscreenElement ? document.exitFullscreen() : view.requestFullscreen()).catch(()=>{});
-      }
-    });
-
-    // Boot
-    (async () => {
-      configureUV();
-
-      // Install SW first; if it registers we consider "transport" OK for HTTP path.
-      const swOk = await installSW();
-      await Promise.all([probeHTTP(), probeWS()]);
-
-      chipTransportText.textContent = swOk ? "transport: ready" : "transport: degraded";
-      setDot(chipTransport, swOk ? "ok" : "bad");
-
-      // Optional: focus the address bar
-      addr.focus();
-    })();
-  </script>
+  <!-- IMPORTANT: allow fullscreen + features; sandbox is kept permissive -->
+  <iframe id="view"
+          allow="fullscreen; autoplay; clipboard-read; clipboard-write; microphone; camera; geolocation; display-capture; screen-wake-lock; web-share;"
+          allowfullscreen
+          sandbox="allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation">
+  </iframe>
 </body>
 </html>

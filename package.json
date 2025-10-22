@@ -2,7 +2,12 @@
   "name": "frontend-pages",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "scripts": {
-    "build": "node scripts/vendor-baremux.mjs"
+    "build": "node scripts/vendor.mjs"
+  },
+  "dependencies": {
+    "@titaniumnetwork-dev/ultraviolet": "^3.0.0",
+    "@mercuryworkshop/bare-mux": "^2.1.7"
   }
 }
